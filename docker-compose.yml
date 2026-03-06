@@ -1,0 +1,78 @@
+services:
+  # ──────────────────────────────────────────────
+  # PostgreSQL Database
+  # ──────────────────────────────────────────────
+  database:
+    image: postgres:16-alpine
+    container_name: aman_database
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: aman_resorts
+      POSTGRES_USER: aman_admin
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-AmanSecure2024!}
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+      - ./database/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql
+    networks:
+      - aman_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aman_admin -d aman_resorts"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ──────────────────────────────────────────────
+  # Backend API (Node.js + Express)
+  # ──────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: aman_backend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      DB_HOST: database
+      DB_PORT: 5432
+      DB_NAME: aman_resorts
+      DB_USER: aman_admin
+      DB_PASSWORD: ${DB_PASSWORD:-AmanSecure2024!}
+      JWT_SECRET: ${JWT_SECRET:-aman-jwt-secret-2024-production}
+      CORS_ORIGIN: http://localhost:3000
+    ports:
+      - "4000:4000"
+    depends_on:
+      database:
+        condition: service_healthy
+    networks:
+      - aman_network
+    volumes:
+      - ./backend/src:/app/src
+
+  # ──────────────────────────────────────────────
+  # Frontend (Nginx + Static)
+  # ──────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: aman_frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - aman_network
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  aman_network:
+    driver: bridge
