@@ -17,6 +17,14 @@
     display: none;
   }
 
+  .nav {
+    padding: var(--space-md) 0;
+  }
+
+  .nav.scrolled {
+    padding: var(--space-sm) 0;
+  }
+
   .intro__grid {
     grid-template-columns: 1fr;
     gap: var(--space-2xl);
@@ -65,9 +73,44 @@
     background-attachment: scroll;
   }
 
-  /* Hide custom cursor on touch devices */
   .custom-cursor {
     display: none !important;
+  }
+
+  /* Enhanced Mobile Menu */
+  .mobile-menu {
+    padding: var(--space-2xl);
+  }
+
+  .mobile-menu__nav {
+    gap: var(--space-xl);
+  }
+
+  .mobile-menu__link {
+    font-size: clamp(1.75rem, 5vw, 2.5rem);
+    padding: var(--space-sm) 0;
+  }
+
+  .mobile-menu__link::before {
+    font-size: 0.65rem;
+    left: -2.5rem;
+  }
+
+  .mobile-menu__footer {
+    padding: var(--space-xl) 0;
+  }
+
+  .nav__logo {
+    z-index: 100;
+  }
+
+  .nav__hamburger {
+    z-index: 100;
+  }
+
+  /* Theme toggle visible on mobile */
+  .nav__theme-toggle {
+    display: flex;
   }
 }
 

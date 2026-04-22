@@ -202,6 +202,13 @@
   border: 1px solid var(--border-color);
   color: var(--text-secondary);
   transition: all var(--duration-fast);
+  background: transparent;
+  cursor: pointer;
+}
+
+.nav__theme-toggle:hover {
+  border-color: var(--gold-border);
+  color: var(--gold);
 }
 
 .nav__theme-toggle:hover {
