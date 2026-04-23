@@ -10,8 +10,6 @@ services:
       POSTGRES_DB: aman_resorts
       POSTGRES_USER: aman_admin
       POSTGRES_PASSWORD: ${DB_PASSWORD:-AmanSecure2024!}
-    ports:
-      - "5434:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
@@ -43,15 +41,22 @@ services:
       DB_PASSWORD: ${DB_PASSWORD:-AmanSecure2024!}
       JWT_SECRET: ${JWT_SECRET:-aman-jwt-secret-2024-production}
       CORS_ORIGIN: http://localhost:3000
-    ports:
-      - "4001:4000"
     depends_on:
       database:
         condition: service_healthy
     networks:
       - aman_network
+      - traefik_public
     volumes:
       - ./backend/src:/app/src
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik_public"
+      - "traefik.http.routers.hotel-aman-api.rule=PathPrefix(`/hotel-aman/api`)"
+      - "traefik.http.routers.hotel-aman-api.entrypoints=web"
+      - "traefik.http.routers.hotel-aman-api.middlewares=hotel-aman-api-stripprefix"
+      - "traefik.http.middlewares.hotel-aman-api-stripprefix.stripprefix.prefixes=/hotel-aman"
+      - "traefik.http.services.hotel-aman-api.loadbalancer.server.port=4000"
 
   # ──────────────────────────────────────────────
   # Frontend (Nginx + Static)
@@ -62,12 +67,19 @@ services:
       dockerfile: Dockerfile
     container_name: aman_frontend
     restart: unless-stopped
-    ports:
-      - "3005:80"
     depends_on:
       - backend
     networks:
       - aman_network
+      - traefik_public
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik_public"
+      - "traefik.http.routers.hotel-aman.rule=PathPrefix(`/hotel-aman`)"
+      - "traefik.http.routers.hotel-aman.entrypoints=web"
+      - "traefik.http.middlewares.hotel-aman-stripprefix.stripprefix.prefixes=/hotel-aman"
+      - "traefik.http.routers.hotel-aman.middlewares=hotel-aman-stripprefix"
+      - "traefik.http.services.hotel-aman.loadbalancer.server.port=3000"
 
 volumes:
   postgres_data:
@@ -76,3 +88,5 @@ volumes:
 networks:
   aman_network:
     driver: bridge
+  traefik_public:
+    external: true
