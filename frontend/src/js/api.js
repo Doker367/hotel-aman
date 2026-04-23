@@ -4,7 +4,7 @@
    ============================================================ */
 
 const API = (() => {
-  const BASE_URL = '/api';
+  const BASE_URL = '/hotel-aman/api';
 
   async function request(endpoint, options = {}) {
     const config = {
