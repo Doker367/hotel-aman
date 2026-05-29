@@ -1,7 +1,4 @@
 services:
-  # ──────────────────────────────────────────────
-  # PostgreSQL Database
-  # ──────────────────────────────────────────────
   database:
     image: postgres:16-alpine
     container_name: aman_database
@@ -9,7 +6,7 @@ services:
     environment:
       POSTGRES_DB: aman_resorts
       POSTGRES_USER: aman_admin
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-AmanSecure2024!}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-AmanSecure2024pass}
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
@@ -17,14 +14,12 @@ services:
     networks:
       - aman_network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U aman_admin -d aman_resorts"]
+      test:
+        - CMD-SHELL
+        - pg_isready -U aman_admin -d aman_resorts
       interval: 10s
       timeout: 5s
       retries: 5
-
-  # ──────────────────────────────────────────────
-  # Backend API (Node.js + Express)
-  # ──────────────────────────────────────────────
   backend:
     build:
       context: ./backend
@@ -34,11 +29,11 @@ services:
     environment:
       NODE_ENV: production
       PORT: 4000
-      DB_HOST: database
+      DB_HOST: aman_database
       DB_PORT: 5432
       DB_NAME: aman_resorts
       DB_USER: aman_admin
-      DB_PASSWORD: ${DB_PASSWORD:-AmanSecure2024!}
+      DB_PASSWORD: ${DB_PASSWORD:-AmanSecure2024pass}
       JWT_SECRET: ${JWT_SECRET:-aman-jwt-secret-2024-production}
       CORS_ORIGIN: http://localhost:3000
     depends_on:
@@ -50,17 +45,13 @@ services:
     volumes:
       - ./backend/src:/app/src
     labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=traefik_public"
-      - "traefik.http.routers.hotel-aman-api.rule=PathPrefix(`/hotel-aman/api`)"
-      - "traefik.http.routers.hotel-aman-api.entrypoints=web"
-      - "traefik.http.routers.hotel-aman-api.middlewares=hotel-aman-api-stripprefix"
-      - "traefik.http.middlewares.hotel-aman-api-stripprefix.stripprefix.prefixes=/hotel-aman"
-      - "traefik.http.services.hotel-aman-api.loadbalancer.server.port=4000"
-
-  # ──────────────────────────────────────────────
-  # Frontend (Nginx + Static)
-  # ──────────────────────────────────────────────
+      - traefik.enable=true
+      - traefik.docker.network=traefik_public
+      - traefik.http.routers.hotel-aman-api.rule=PathPrefix(`/hotel-aman/api`)
+      - traefik.http.routers.hotel-aman-api.entrypoints=web
+      - traefik.http.routers.hotel-aman-api.middlewares=hotel-aman-api-stripprefix
+      - traefik.http.middlewares.hotel-aman-api-stripprefix.stripprefix.prefixes=/hotel-aman
+      - traefik.http.services.hotel-aman-api.loadbalancer.server.port=4000
   frontend:
     build:
       context: ./frontend
@@ -73,20 +64,20 @@ services:
       - aman_network
       - traefik_public
     labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=traefik_public"
-      - "traefik.http.routers.hotel-aman.rule=PathPrefix(`/hotel-aman`)"
-      - "traefik.http.routers.hotel-aman.entrypoints=web"
-      - "traefik.http.middlewares.hotel-aman-stripprefix.stripprefix.prefixes=/hotel-aman"
-      - "traefik.http.routers.hotel-aman.middlewares=hotel-aman-stripprefix"
-      - "traefik.http.services.hotel-aman.loadbalancer.server.port=3000"
-
+      - traefik.enable=true
+      - traefik.docker.network=traefik_public
+      - traefik.http.routers.hotel-aman.rule=PathPrefix(`/hotel-aman`)
+      - traefik.http.routers.hotel-aman.entrypoints=web
+      - traefik.http.middlewares.hotel-aman-stripprefix.stripprefix.prefixes=/hotel-aman
+      - traefik.http.routers.hotel-aman.middlewares=hotel-aman-stripprefix
+      - traefik.http.services.hotel-aman.loadbalancer.server.port=3000
 volumes:
   postgres_data:
     driver: local
-
 networks:
   aman_network:
     driver: bridge
   traefik_public:
+    external: true
+  dokploy-network:
     external: true
